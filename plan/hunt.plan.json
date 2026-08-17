@@ -25,7 +25,7 @@
 		"c": {
 			"d1_schema": {
 				"s": "Create the D1 database and the one table the app needs.\n\n1. `env -u CLOUDFLARE_API_TOKEN pnpm dlx wrangler d1 create hunt`, then put the returned binding in wrangler.jsonc as binding name `DB`.\n2. Write the migration at `migrations/0001_init.sql` and apply it remotely.\n\nThe table is `p`, single-letter columns, exactly these:\n\n```sql\ncreate table p (\n  i text primary key,\n  h text not null,\n  s text not null,\n  u text not null,\n  e text,\n  a text,\n  t text not null,\n  c text,\n  g integer default 0,\n  k integer default 0,\n  d text\n);\ncreate index p_h_c on p (h, c desc);\n```\n\n`i` is the source and the post id joined by a colon, so `x:2088952589362606481`. `h` is the hunt name. `s` is the source. `u` is the url, `e` the embed url or null, `a` the author, `t` the post text, `c` the created-at ISO string, `g` the age in minutes at push time, `k` 1 when it survived judging, `d` the drafted reply or null.",
-				"d": 0,
+				"d": 1,
 				"t": "test -f migrations/0001_init.sql && grep -q 'create table p' migrations/0001_init.sql && grep -q '\"DB\"' wrangler.jsonc"
 			},
 			"ingest_route": {

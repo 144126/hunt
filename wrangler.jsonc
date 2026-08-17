@@ -9,5 +9,12 @@
 		"directory": ".svelte-kit/cloudflare"
 	},
 	"workers_dev": true,
-	"preview_urls": true
+	"preview_urls": true,
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "hunt",
+			"database_id": "025c46bd-819e-4a50-a820-3f1c5dbba7ba"
+		}
+	]
 }
