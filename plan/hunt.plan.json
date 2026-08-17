@@ -20,7 +20,7 @@
 	},
 	"data": {
 		"s": "leads get into the worker and back out",
-		"d": 0,
+		"d": 1,
 		"t": "pnpm check && pnpm build",
 		"c": {
 			"d1_schema": {
@@ -30,13 +30,13 @@
 			},
 			"ingest_route": {
 				"s": "Add the push endpoint the hunt scripts call: `POST /i` at src/routes/i/+server.ts.\n\n1. Auth: require header `authorization: Bearer <secret>`, compared against secret `HUNT_PUSH` read through the repo `get_secret` helper. Create that helper at src/lib/secret.ts if it is not there. Wrong or missing token returns 401 with no body.\n2. Body is a JSON array of records shaped like the JSONL described in the preamble. Upsert each into `p` with `insert ... on conflict(i) do update`, so a re-push updates k and d without duplicating.\n3. Return `{ n }` where n is the number of rows written.\n4. Cap the array at 500 records per request and return 413 above that.\n\nA record missing `id`, `src`, `url` or `text` is skipped, not an error. Count only what was written.",
-				"d": 0,
+				"d": 1,
 				"v": "test -f migrations/0001_init.sql",
 				"t": "test -f src/routes/i/+server.ts && test -f src/lib/secret.ts && grep -q 'on conflict' src/routes/i/+server.ts && pnpm check"
 			},
 			"push_script": {
 				"s": "Add `~/.agents/skills/x-hunt/push.mjs` so a hunt cycle can send its results up.\n\nUsage: `node push.mjs <hunt> [--all]`.\n\n1. By default it reads every `*-new.jsonl` in `~/.x-hunt/<hunt>/`, which is the current cycle's keepers from all sources. With `--all` it reads `all.jsonl` instead, which is every post ever collected.\n2. It also reads `~/.x-hunt/<hunt>/leads.jsonl` when that file exists, and merges `k: 1` and the draft into `d` by matching on src and id.\n3. It POSTs to the url in `~/.x-hunt/.env` as `HUNT_URL`, with `HUNT_PUSH` as the bearer, in batches of 500.\n4. It prints how many were sent and the endpoint's reported count.\n\nNo dependencies. Node 22 has fetch. Match the style of the sibling hunt.mjs: single file, snake_case, no comments.",
-				"d": 0,
+				"d": 1,
 				"v": "test -f src/routes/i/+server.ts",
 				"t": "test -f ~/.agents/skills/x-hunt/push.mjs && node ~/.agents/skills/x-hunt/push.mjs 2>&1 | grep -q usage"
 			}
