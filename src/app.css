@@ -1,1 +1,15 @@
 @import 'tailwindcss';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+	--color-background: #0a0d12;
+	--color-surface: #12161f;
+	--color-hairline: #222834;
+	--color-ink: #e8ebf0;
+	--color-muted: #8791a3;
+	--color-x: #1d9bf0;
+	--color-reddit: #ff4500;
+	--color-nairaland: #00a651;
+	--color-fb: #1877f2;
+}

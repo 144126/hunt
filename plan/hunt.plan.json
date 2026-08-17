@@ -2,16 +2,17 @@
 	"_": "PROJECT: `hunt`, a private web app that shows leads collected by the x-hunt, reddit-hunt and hgc-hunt skills. Repo root is ~/i/me/hunt, github 144126/hunt. Run every command from the repo root.\n\nWHAT IT DOES: hunt scripts on Ed's laptop POST their collected posts to this Worker. The app lists them, newest first, and shows the original post embedded beside the list. It is read-only: no editing, no marking, no forms. Ed reads it on his phone and clicks through to reply.\n\nSTACK: SvelteKit (@sveltejs/kit@next, async remote functions, explicit env), TypeScript, adapter-cloudflare targeting Workers, Tailwind v4, D1. pnpm always, never npm or npx. Node 22.\n\nCONVENTIONS (from ~/AGENTS.md, they are not optional):\n- snake_case for variables and functions.\n- Database columns and request JSON keys are SINGLE LETTERS. The `p` table below is already named this way; keep it.\n- Svelte runes only: $props, $state, $derived. Never `export let`.\n- All UI text lowercase.\n- No comments in code unless they explain a non-obvious WHY.\n- Prefer Tailwind utilities. No inline `style=`, no `<style>` blocks.\n- Use tokens from src/app.css. Never raw css values.\n- Never start the dev server.\n\nTRAPS, each one cost real time before:\n- NEVER put `wrangler types` in the build script. `build` stays `vite build` only.\n- Every wrangler command needs `env -u CLOUDFLARE_API_TOKEN` in front, or it authenticates as the wrong account.\n- Secrets read only via `$env/dynamic/private`. A Secrets Store binding is an object with async .get(), a plain [vars] value is a string. Always go through the repo `get_secret(v)` helper, type `SecretVal = string | { get?: () => Promise<string> }`.\n- Local env vars live in `.env`. Never create `.dev.vars`; delete it on sight.\n- A SvelteKit page load's return value is serialised into the HTML. Return an explicit allowlist of fields, never a spread of a database row.\n- `pnpm install` fails with 'packages field missing or empty' when pnpm-workspace.yaml has allowBuilds but no packages. Add `packages: ['.']` beside it.\n- Tailwind v4 has no tailwind.config.js. Theme goes in `@theme` inside src/app.css.\n\nEMBED URLS, exact, these are the whole point of the app:\n- x:         https://platform.twitter.com/embed/Tweet.html?id=<post id>\n- reddit:    https://embed.reddit.com<permalink>?embed=true&theme=dark\n- nairaland: NONE. Nairaland cannot be framed. Show the stored text and only the open-in-new-tab button.\nThe fetchers already write the right value into each post's `embed` field, and null for nairaland. Trust that field, do not rebuild the url.\n\nDATA SOURCE: the hunt scripts write JSONL under ~/.x-hunt/<hunt>/. Every record already has: src, id, url, embed, at, age_min, m (metrics object), text, and one of author or author_id. A record that survived judging also gets k=1 and a draft reply in d.",
 	"scaffold": {
 		"s": "the repo exists, builds, and is on github",
+		"d": 1,
 		"t": "pnpm build && pnpm check",
 		"c": {
 			"create_project": {
 				"s": "Create the SvelteKit project at ~/i/me/hunt and get `pnpm build` green.\n\n1. Run `pnpm dlx sv create` per ~/AGENTS.md 'New webapp project': template SvelteKit minimal, TypeScript syntax, add-ons prettier eslint vitest playwright sveltekit-adapter experimental; vitest unit+component; adapter cloudflare then Workers; experimental @sveltejs/kit@next then async, remote functions, explicit environment variables, rendering error boundaries, forked preloading.\n2. TRAP: `plan/` already exists here, so `sv create` may refuse a non-empty directory. If it does, create in `/tmp/hunt-scaffold`, then move everything except `plan/` into ~/i/me/hunt.\n3. Add Tailwind v4 with `pnpm dlx sv add tailwindcss`.\n4. `git init`, commit, then `gh repo create 144126/hunt --public --source=. --remote=origin --push`.",
-				"d": 0,
+				"d": 1,
 				"t": "test -f package.json && test -f src/app.css && grep -q '\"build\": \"vite build\"' package.json && ! grep -q 'wrangler types' package.json && pnpm build"
 			},
 			"design_tokens": {
 				"s": "Define the visual system in src/app.css as Tailwind v4 `@theme` tokens, and use them everywhere after this.\n\nThis is a dense list read on a phone in daylight and on a laptop at night, so it is dark-first with one accent per source.\n\n1. Tokens needed: a background, a raised surface, a hairline border, primary and muted text, and four source colours named for the sources: x, reddit, nairaland, fb.\n2. Add `@custom-variant dark (&:is(.dark *));`.\n3. Set the body background and text from tokens in src/routes/+layout.svelte.\n\nPick the actual colours yourself. Everything after this step uses the token names, never a raw value.",
-				"d": 0,
+				"d": 1,
 				"v": "test -f src/app.css",
 				"t": "grep -q '@theme' src/app.css && grep -q 'nairaland' src/app.css && pnpm build"
 			}
@@ -19,6 +20,7 @@
 	},
 	"data": {
 		"s": "leads get into the worker and back out",
+		"d": 0,
 		"t": "pnpm check && pnpm build",
 		"c": {
 			"d1_schema": {
@@ -42,6 +44,7 @@
 	},
 	"ui": {
 		"s": "the page Ed actually opens",
+		"d": 0,
 		"t": "pnpm build && pnpm check && pnpm lint",
 		"c": {
 			"list_page": {
@@ -60,6 +63,7 @@
 	},
 	"ship": {
 		"s": "live, private, and fed by a real cycle",
+		"d": 0,
 		"t": "-",
 		"c": {
 			"deploy": {
