@@ -63,18 +63,18 @@
 	},
 	"ship": {
 		"s": "live, private, and fed by a real cycle",
-		"d": 0,
+		"d": 1,
 		"t": "-",
 		"c": {
 			"deploy": {
 				"s": "Deploy to Cloudflare Workers and put the push secret in place.\n\n1. Generate a long random secret. Store it with `env -u CLOUDFLARE_API_TOKEN pnpm dlx wrangler secrets-store secret create <store_id> --name HUNT_PUSH --scopes workers`, and declare it in wrangler.jsonc under `secrets_store_secrets`.\n2. Put the same value plus the deployed url into `~/.x-hunt/.env` as `HUNT_PUSH` and `HUNT_URL`.\n3. Deploy. Every wrangler command needs `env -u CLOUDFLARE_API_TOKEN`.\n4. Apply the migration against the remote D1.\n\nThe app has no login. The push endpoint is the only writable surface and the bearer protects it. Do not add auth to the read path in this step; if Ed wants the list private, that is a later decision, and blocking here is correct if he has said he wants it.",
-				"d": 0,
+				"d": 1,
 				"v": "test -f wrangler.jsonc",
 				"t": "grep -q 'secrets_store_secrets' wrangler.jsonc && grep -q 'HUNT_PUSH' wrangler.jsonc"
 			},
 			"first_real_cycle": {
 				"s": "Prove the whole loop with real data, end to end.\n\n1. Run a reddit-hunt cycle for the `webdev` hunt, which is free, then `node ~/.agents/skills/x-hunt/push.mjs webdev`.\n2. Open the deployed url on a phone. Confirm the rows are there, an embed opens, and the new-tab button reaches the real post.\n3. Record what the cycle produced with `plan hunt --note \"...\"`: how many rows landed, and whether any embed failed to render.\n\nIf the reddit leg has no credentials yet, push the existing `~/.x-hunt/webdev/all.jsonl` with `--all` instead. That file already holds 59 real X posts.",
-				"d": 0,
+				"d": 1,
 				"v": "test -f ~/.agents/skills/x-hunt/push.mjs",
 				"t": "-"
 			}

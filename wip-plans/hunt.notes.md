@@ -1,0 +1,1 @@
+- 2026-08-17 step9: pushed webdev/all.jsonl --all = 59 real x posts; old jsonl lacked src/embed so push.mjs infers them. worker wrote 59, d1 now 59 webdev + 3 hgc. sampled x/reddit iframes + nairaland text fallback render; no failures. mobile overlay ok at 390x844.
