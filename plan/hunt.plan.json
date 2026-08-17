@@ -1,0 +1,79 @@
+{
+	"_": "PROJECT: `hunt`, a private web app that shows leads collected by the x-hunt, reddit-hunt and hgc-hunt skills. Repo root is ~/i/me/hunt, github 144126/hunt. Run every command from the repo root.\n\nWHAT IT DOES: hunt scripts on Ed's laptop POST their collected posts to this Worker. The app lists them, newest first, and shows the original post embedded beside the list. It is read-only: no editing, no marking, no forms. Ed reads it on his phone and clicks through to reply.\n\nSTACK: SvelteKit (@sveltejs/kit@next, async remote functions, explicit env), TypeScript, adapter-cloudflare targeting Workers, Tailwind v4, D1. pnpm always, never npm or npx. Node 22.\n\nCONVENTIONS (from ~/AGENTS.md, they are not optional):\n- snake_case for variables and functions.\n- Database columns and request JSON keys are SINGLE LETTERS. The `p` table below is already named this way; keep it.\n- Svelte runes only: $props, $state, $derived. Never `export let`.\n- All UI text lowercase.\n- No comments in code unless they explain a non-obvious WHY.\n- Prefer Tailwind utilities. No inline `style=`, no `<style>` blocks.\n- Use tokens from src/app.css. Never raw css values.\n- Never start the dev server.\n\nTRAPS, each one cost real time before:\n- NEVER put `wrangler types` in the build script. `build` stays `vite build` only.\n- Every wrangler command needs `env -u CLOUDFLARE_API_TOKEN` in front, or it authenticates as the wrong account.\n- Secrets read only via `$env/dynamic/private`. A Secrets Store binding is an object with async .get(), a plain [vars] value is a string. Always go through the repo `get_secret(v)` helper, type `SecretVal = string | { get?: () => Promise<string> }`.\n- Local env vars live in `.env`. Never create `.dev.vars`; delete it on sight.\n- A SvelteKit page load's return value is serialised into the HTML. Return an explicit allowlist of fields, never a spread of a database row.\n- `pnpm install` fails with 'packages field missing or empty' when pnpm-workspace.yaml has allowBuilds but no packages. Add `packages: ['.']` beside it.\n- Tailwind v4 has no tailwind.config.js. Theme goes in `@theme` inside src/app.css.\n\nEMBED URLS, exact, these are the whole point of the app:\n- x:         https://platform.twitter.com/embed/Tweet.html?id=<post id>\n- reddit:    https://embed.reddit.com<permalink>?embed=true&theme=dark\n- nairaland: NONE. Nairaland cannot be framed. Show the stored text and only the open-in-new-tab button.\nThe fetchers already write the right value into each post's `embed` field, and null for nairaland. Trust that field, do not rebuild the url.\n\nDATA SOURCE: the hunt scripts write JSONL under ~/.x-hunt/<hunt>/. Every record already has: src, id, url, embed, at, age_min, m (metrics object), text, and one of author or author_id. A record that survived judging also gets k=1 and a draft reply in d.",
+	"scaffold": {
+		"s": "the repo exists, builds, and is on github",
+		"t": "pnpm build && pnpm check",
+		"c": {
+			"create_project": {
+				"s": "Create the SvelteKit project at ~/i/me/hunt and get `pnpm build` green.\n\n1. Run `pnpm dlx sv create` per ~/AGENTS.md 'New webapp project': template SvelteKit minimal, TypeScript syntax, add-ons prettier eslint vitest playwright sveltekit-adapter experimental; vitest unit+component; adapter cloudflare then Workers; experimental @sveltejs/kit@next then async, remote functions, explicit environment variables, rendering error boundaries, forked preloading.\n2. TRAP: `plan/` already exists here, so `sv create` may refuse a non-empty directory. If it does, create in `/tmp/hunt-scaffold`, then move everything except `plan/` into ~/i/me/hunt.\n3. Add Tailwind v4 with `pnpm dlx sv add tailwindcss`.\n4. `git init`, commit, then `gh repo create 144126/hunt --public --source=. --remote=origin --push`.",
+				"d": 0,
+				"t": "test -f package.json && test -f src/app.css && grep -q '\"build\": \"vite build\"' package.json && ! grep -q 'wrangler types' package.json && pnpm build"
+			},
+			"design_tokens": {
+				"s": "Define the visual system in src/app.css as Tailwind v4 `@theme` tokens, and use them everywhere after this.\n\nThis is a dense list read on a phone in daylight and on a laptop at night, so it is dark-first with one accent per source.\n\n1. Tokens needed: a background, a raised surface, a hairline border, primary and muted text, and four source colours named for the sources: x, reddit, nairaland, fb.\n2. Add `@custom-variant dark (&:is(.dark *));`.\n3. Set the body background and text from tokens in src/routes/+layout.svelte.\n\nPick the actual colours yourself. Everything after this step uses the token names, never a raw value.",
+				"d": 0,
+				"v": "test -f src/app.css",
+				"t": "grep -q '@theme' src/app.css && grep -q 'nairaland' src/app.css && pnpm build"
+			}
+		}
+	},
+	"data": {
+		"s": "leads get into the worker and back out",
+		"t": "pnpm check && pnpm build",
+		"c": {
+			"d1_schema": {
+				"s": "Create the D1 database and the one table the app needs.\n\n1. `env -u CLOUDFLARE_API_TOKEN pnpm dlx wrangler d1 create hunt`, then put the returned binding in wrangler.jsonc as binding name `DB`.\n2. Write the migration at `migrations/0001_init.sql` and apply it remotely.\n\nThe table is `p`, single-letter columns, exactly these:\n\n```sql\ncreate table p (\n  i text primary key,\n  h text not null,\n  s text not null,\n  u text not null,\n  e text,\n  a text,\n  t text not null,\n  c text,\n  g integer default 0,\n  k integer default 0,\n  d text\n);\ncreate index p_h_c on p (h, c desc);\n```\n\n`i` is the source and the post id joined by a colon, so `x:2088952589362606481`. `h` is the hunt name. `s` is the source. `u` is the url, `e` the embed url or null, `a` the author, `t` the post text, `c` the created-at ISO string, `g` the age in minutes at push time, `k` 1 when it survived judging, `d` the drafted reply or null.",
+				"d": 0,
+				"t": "test -f migrations/0001_init.sql && grep -q 'create table p' migrations/0001_init.sql && grep -q '\"DB\"' wrangler.jsonc"
+			},
+			"ingest_route": {
+				"s": "Add the push endpoint the hunt scripts call: `POST /i` at src/routes/i/+server.ts.\n\n1. Auth: require header `authorization: Bearer <secret>`, compared against secret `HUNT_PUSH` read through the repo `get_secret` helper. Create that helper at src/lib/secret.ts if it is not there. Wrong or missing token returns 401 with no body.\n2. Body is a JSON array of records shaped like the JSONL described in the preamble. Upsert each into `p` with `insert ... on conflict(i) do update`, so a re-push updates k and d without duplicating.\n3. Return `{ n }` where n is the number of rows written.\n4. Cap the array at 500 records per request and return 413 above that.\n\nA record missing `id`, `src`, `url` or `text` is skipped, not an error. Count only what was written.",
+				"d": 0,
+				"v": "test -f migrations/0001_init.sql",
+				"t": "test -f src/routes/i/+server.ts && test -f src/lib/secret.ts && grep -q 'on conflict' src/routes/i/+server.ts && pnpm check"
+			},
+			"push_script": {
+				"s": "Add `~/.agents/skills/x-hunt/push.mjs` so a hunt cycle can send its results up.\n\nUsage: `node push.mjs <hunt> [--all]`.\n\n1. By default it reads every `*-new.jsonl` in `~/.x-hunt/<hunt>/`, which is the current cycle's keepers from all sources. With `--all` it reads `all.jsonl` instead, which is every post ever collected.\n2. It also reads `~/.x-hunt/<hunt>/leads.jsonl` when that file exists, and merges `k: 1` and the draft into `d` by matching on src and id.\n3. It POSTs to the url in `~/.x-hunt/.env` as `HUNT_URL`, with `HUNT_PUSH` as the bearer, in batches of 500.\n4. It prints how many were sent and the endpoint's reported count.\n\nNo dependencies. Node 22 has fetch. Match the style of the sibling hunt.mjs: single file, snake_case, no comments.",
+				"d": 0,
+				"v": "test -f src/routes/i/+server.ts",
+				"t": "test -f ~/.agents/skills/x-hunt/push.mjs && node ~/.agents/skills/x-hunt/push.mjs 2>&1 | grep -q usage"
+			}
+		}
+	},
+	"ui": {
+		"s": "the page Ed actually opens",
+		"t": "pnpm build && pnpm check && pnpm lint",
+		"c": {
+			"list_page": {
+				"s": "Build the list at src/routes/+page.svelte with its loader at src/routes/+page.server.ts.\n\n1. The loader queries `p` ordered by `c` descending, limit 200. TRAP: return an explicit allowlist of fields, never a spread of the row.\n2. Each row shows, in one line where it fits: a source badge coloured by the source token, the age as a short relative string, the author, and the first 140 characters of `t`. A row with `k = 1` gets a visible marker, because those are the ones that survived judging.\n3. Above the list: filter by hunt, filter by source, and a keepers-only toggle. Use `$state` and `$derived`, filter on the client, no extra round trip.\n4. Show the total and the filtered count.\n\nAll text lowercase. Rows are dense: this is a list to scan, not a feed to browse.",
+				"d": 0,
+				"v": "test -f src/routes/i/+server.ts",
+				"t": "test -f src/routes/+page.server.ts && test -f src/routes/+page.svelte && ! grep -q 'export let' src/routes/+page.svelte && pnpm build"
+			},
+			"embed_pane": {
+				"s": "Make a row open the original post inside the page.\n\n1. Clicking a row sets the selected post in `$state`. The pane renders `<iframe src={post.e}>` when `e` is set.\n2. When `e` is null, which is every nairaland post, the pane shows the stored text `t` instead, and says the source cannot be embedded.\n3. Every row also carries a separate button that opens `u` in a new tab, with `target=\"_blank\" rel=\"noopener\"`. That button must not select the row, so stop the event.\n4. Layout: two columns on desktop, list left and pane right. On a phone the pane opens over the list with a close button, because the phone is the main way this gets read.\n\nOpen the page and look at it once an X post and a reddit post are both loaded. Confirm both actually render, since a broken embed is the one failure the gate cannot see.",
+				"d": 0,
+				"v": "test -f src/routes/+page.svelte",
+				"t": "grep -q 'iframe' src/routes/+page.svelte && grep -q 'noopener' src/routes/+page.svelte && pnpm build && pnpm check"
+			}
+		}
+	},
+	"ship": {
+		"s": "live, private, and fed by a real cycle",
+		"t": "-",
+		"c": {
+			"deploy": {
+				"s": "Deploy to Cloudflare Workers and put the push secret in place.\n\n1. Generate a long random secret. Store it with `env -u CLOUDFLARE_API_TOKEN pnpm dlx wrangler secrets-store secret create <store_id> --name HUNT_PUSH --scopes workers`, and declare it in wrangler.jsonc under `secrets_store_secrets`.\n2. Put the same value plus the deployed url into `~/.x-hunt/.env` as `HUNT_PUSH` and `HUNT_URL`.\n3. Deploy. Every wrangler command needs `env -u CLOUDFLARE_API_TOKEN`.\n4. Apply the migration against the remote D1.\n\nThe app has no login. The push endpoint is the only writable surface and the bearer protects it. Do not add auth to the read path in this step; if Ed wants the list private, that is a later decision, and blocking here is correct if he has said he wants it.",
+				"d": 0,
+				"v": "test -f wrangler.jsonc",
+				"t": "grep -q 'secrets_store_secrets' wrangler.jsonc && grep -q 'HUNT_PUSH' wrangler.jsonc"
+			},
+			"first_real_cycle": {
+				"s": "Prove the whole loop with real data, end to end.\n\n1. Run a reddit-hunt cycle for the `webdev` hunt, which is free, then `node ~/.agents/skills/x-hunt/push.mjs webdev`.\n2. Open the deployed url on a phone. Confirm the rows are there, an embed opens, and the new-tab button reaches the real post.\n3. Record what the cycle produced with `plan hunt --note \"...\"`: how many rows landed, and whether any embed failed to render.\n\nIf the reddit leg has no credentials yet, push the existing `~/.x-hunt/webdev/all.jsonl` with `--all` instead. That file already holds 59 real X posts.",
+				"d": 0,
+				"v": "test -f ~/.agents/skills/x-hunt/push.mjs",
+				"t": "-"
+			}
+		}
+	}
+}
