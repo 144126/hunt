@@ -16,5 +16,12 @@
 			"database_name": "hunt",
 			"database_id": "025c46bd-819e-4a50-a820-3f1c5dbba7ba"
 		}
+	],
+	"secrets_store_secrets": [
+		{
+			"binding": "HUNT_PUSH",
+			"store_id": "45748cb1c67946df943075fa14cb8815",
+			"secret_name": "HUNT_PUSH"
+		}
 	]
 }

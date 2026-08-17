@@ -44,7 +44,7 @@
 	},
 	"ui": {
 		"s": "the page Ed actually opens",
-		"d": 0,
+		"d": 1,
 		"t": "pnpm build && pnpm check && pnpm lint",
 		"c": {
 			"list_page": {
@@ -55,7 +55,7 @@
 			},
 			"embed_pane": {
 				"s": "Make a row open the original post inside the page.\n\n1. Clicking a row sets the selected post in `$state`. The pane renders `<iframe src={post.e}>` when `e` is set.\n2. When `e` is null, which is every nairaland post, the pane shows the stored text `t` instead, and says the source cannot be embedded.\n3. Every row also carries a separate button that opens `u` in a new tab, with `target=\"_blank\" rel=\"noopener\"`. That button must not select the row, so stop the event.\n4. Layout: two columns on desktop, list left and pane right. On a phone the pane opens over the list with a close button, because the phone is the main way this gets read.\n\nOpen the page and look at it once an X post and a reddit post are both loaded. Confirm both actually render, since a broken embed is the one failure the gate cannot see.",
-				"d": 0,
+				"d": 1,
 				"v": "test -f src/routes/+page.svelte",
 				"t": "grep -q 'iframe' src/routes/+page.svelte && grep -q 'noopener' src/routes/+page.svelte && pnpm build && pnpm check"
 			}
