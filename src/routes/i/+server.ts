@@ -39,8 +39,19 @@ export async function POST({ request, platform }) {
 	let n = 0;
 	for (const r of rows) {
 		const { src, id, url, text } = r;
-		if (typeof src !== 'string' || typeof id !== 'string' || typeof url !== 'string' || typeof text !== 'string') continue;
-		const a = typeof r.author === 'string' ? r.author : typeof r.author_id === 'string' ? r.author_id : null;
+		if (
+			typeof src !== 'string' ||
+			typeof id !== 'string' ||
+			typeof url !== 'string' ||
+			typeof text !== 'string'
+		)
+			continue;
+		const a =
+			typeof r.author === 'string'
+				? r.author
+				: typeof r.author_id === 'string'
+					? r.author_id
+					: null;
 		const e = typeof r.embed === 'string' ? r.embed : null;
 		const c = typeof r.at === 'string' ? r.at : null;
 		const g = typeof r.age_min === 'number' ? r.age_min : 0;

@@ -1,7 +1,9 @@
 export async function load({ platform }) {
 	if (!platform) return { rows: [], total: 0 };
 	const db = platform.env.DB;
-	const list = await db.prepare('select i, h, s, u, e, a, t, c, g, k, d from p order by c desc limit 200').all();
+	const list = await db
+		.prepare('select i, h, s, u, e, a, t, c, g, k, d from p order by c desc limit 200')
+		.all();
 	const cnt = await db.prepare('select count(*) as n from p').first();
 	const rows = (list.results as Array<Record<string, unknown>>).map((r) => ({
 		i: String(r.i ?? ''),

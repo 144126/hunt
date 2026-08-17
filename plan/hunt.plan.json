@@ -49,7 +49,7 @@
 		"c": {
 			"list_page": {
 				"s": "Build the list at src/routes/+page.svelte with its loader at src/routes/+page.server.ts.\n\n1. The loader queries `p` ordered by `c` descending, limit 200. TRAP: return an explicit allowlist of fields, never a spread of the row.\n2. Each row shows, in one line where it fits: a source badge coloured by the source token, the age as a short relative string, the author, and the first 140 characters of `t`. A row with `k = 1` gets a visible marker, because those are the ones that survived judging.\n3. Above the list: filter by hunt, filter by source, and a keepers-only toggle. Use `$state` and `$derived`, filter on the client, no extra round trip.\n4. Show the total and the filtered count.\n\nAll text lowercase. Rows are dense: this is a list to scan, not a feed to browse.",
-				"d": 0,
+				"d": 1,
 				"v": "test -f src/routes/i/+server.ts",
 				"t": "test -f src/routes/+page.server.ts && test -f src/routes/+page.svelte && ! grep -q 'export let' src/routes/+page.svelte && pnpm build"
 			},
